@@ -5,14 +5,13 @@ import socket
 import numpy as np
 from datetime import datetime
 
-#env variables
-JOB_ID = os.environ.get('JOB_ID', "unknown")
-JOB_TYPE = os.environ.get('JOB_TYPE', "cpu") #cpu, io , sleep
-DURATION = float(os.environ.get('DURATION', "10"))
-OUTPUT_DIR = os.environ.get('OUTPUT_DIR', "/mnt/results")
-
-#to simulate hrdw constraints
-REQUIRES_GPU = os.environ.get('REQUIRES_GPU', False).lower() == "true"
+# --- CONFIGURAZIONE DA ENV VARS ---
+JOB_ID = os.environ.get("JOB_ID", "unknown")
+JOB_TYPE = os.environ.get("JOB_TYPE", "cpu")  # 'cpu', 'io', 'sleep'
+DURATION = float(os.environ.get("DURATION", "10"))
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/mnt/results")
+# Simulazione vincolo hardware (solo descrittivo per il log)
+REQUIRES_GPU = os.environ.get("REQUIRES_GPU", "false").lower() == "true"
 
 def do_cpu_work(duration_sec):
     start = time.time()
