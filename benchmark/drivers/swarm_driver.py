@@ -2,6 +2,7 @@ import subprocess
 import time
 import os
 
+
 class SwarmDriver:
     def __init__(self, stack_name="cob-job", image="192.168.15.9:5000/cob-job-worker:latest"):
         self.stack_name = stack_name
@@ -41,10 +42,9 @@ class SwarmDriver:
             return False
         return True
 
-    def cleanup_job(self):
+    def clean_jobs(self):
         print(f"[SWARM] Cleaning services ({self.stack_name})...")
         # Trova tutti i servizi del benchmark e li rimuove
         cmd = f"docker service ls --filter name={self.stack_name} -q | xargs -r docker service rm"
         self._run(cmd)
         time.sleep(5)  # Attesa tecnica per il cleanup
-
