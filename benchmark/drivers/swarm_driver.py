@@ -7,20 +7,22 @@ class SwarmDriver:
     def __init__(self, stack_name="cob-job", image="192.168.15.9:5000/cob-job-worker:latest"):
         self.stack_name = stack_name
         self.image = image
-        # Assicurati che questo path esista sul nodo dove lanci lo script e sui worker
         self.nfs_mount = "type=bind,source=/srv/nfs/cob_results,target=/mnt/results"
 
     def _run(self, cmd):
         return subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
-    def submit_job(self, job_id, job_type="cpu", duration=10, constraints=None):
+    def submit_job(self, job_id, job_type="cpu", duration=10, constraints=None, cpu_reservation=None):
         service_name = f"{self.stack_name}_{job_id}"
 
-        # Gestione Constraints (es. GPU)
-        constraint_flag = ""
+        # Gestione Constraints
+        args = ""
         if constraints:
             for key, val in constraints.items():
-                constraint_flag += f" --constraint node.labels.{key}=={val}"
+                args += f" --constraint node.labels.{key}=={val}"
+
+        if cpu_reservation:
+            args += f" --reserve-cpu {cpu_reservation}"
 
         # Comando Docker Service Create (One-Shot)
         cmd = (
@@ -32,7 +34,7 @@ class SwarmDriver:
             f"--env JOB_TYPE={job_type} "
             f"--env DURATION={duration} "
             f"--mount {self.nfs_mount} "
-            f"{constraint_flag} "
+            f"{args} "
             f"{self.image}"
         )
 
@@ -47,4 +49,4 @@ class SwarmDriver:
         # Trova tutti i servizi del benchmark e li rimuove
         cmd = f"docker service ls --filter name={self.stack_name} -q | xargs -r docker service rm"
         self._run(cmd)
-        time.sleep(5)  # Attesa tecnica per il cleanup
+        time.sleep(5) 

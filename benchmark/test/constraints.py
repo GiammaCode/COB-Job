@@ -81,10 +81,10 @@ def run_test():
 
     if len(intersection) == 0 and errors == 0:
         result_status = "PASSED"
-        print("\n✅ PASSED: Perfect isolation.")
+        print("\nPASSED: Perfect isolation.")
     else:
         result_status = "FAILED"
-        print(f"\n❌ FAILED: Overlap or Errors.")
+        print(f"\nFAILED: Overlap or Errors.")
 
     # --- SALVATAGGIO JSON ---
     output_data = {
