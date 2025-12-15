@@ -4,61 +4,48 @@ import time
 import glob
 import json
 
-# Import del driver comune
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Setup path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 from drivers.swarm_driver import SwarmDriver
 
 # CONFIGURAZIONE
 RESULTS_DIR = "/srv/nfs/cob_results"
 NUM_GPU_JOBS = 3
 NUM_CPU_JOBS = 3
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/placement_constraints.json")
 
 
 def check_placement(file_path):
-    """Legge il JSON e restituisce il nodo su cui ha girato il job"""
     try:
         with open(file_path, 'r') as f:
             data = json.load(f)
         return data.get("node", "unknown"), data.get("job_id", "unknown")
     except Exception as e:
-        print(f"[ERROR] Reading {file_path}: {e}")
         return "error", "error"
 
 
 def run_test():
     print(f"--- TEST 2: PLACEMENT CONSTRAINTS COMPLIANCE ---")
     driver = SwarmDriver()
-
-    # 1. Pulizia
     driver.clean_jobs()
     os.system(f"rm -f {RESULTS_DIR}/*.json")
 
     print("[TEST] Launching Mixed Workload...")
 
-    # 2. Lancia Job GPU (Vincolo: hardware=gpu)
-    # Usiamo 'sleep' come job_type perché ci interessa dove finisce, non il calcolo
+    # Launch GPU Jobs
     for i in range(NUM_GPU_JOBS):
-        driver.submit_job(
-            job_id=f"job-gpu-{i}",
-            job_type="sleep",
-            duration=5,
-            constraints={"hardware": "gpu"}
-        )
-        print(f"   -> Submitted GPU job: job-gpu-{i}")
+        driver.submit_job(job_id=f"job-gpu-{i}", job_type="sleep", duration=5, constraints={"hardware": "gpu"})
 
-    # 3. Lancia Job CPU (Vincolo: hardware=cpu)
+    # Launch CPU Jobs
     for i in range(NUM_CPU_JOBS):
-        driver.submit_job(
-            job_id=f"job-cpu-{i}",
-            job_type="sleep",
-            duration=5,
-            constraints={"hardware": "cpu"}
-        )
-        print(f"   -> Submitted CPU job: job-cpu-{i}")
+        driver.submit_job(job_id=f"job-cpu-{i}", job_type="sleep", duration=5, constraints={"hardware": "cpu"})
 
-    # 4. Attesa completamento
+    # Wait
     expected_files = NUM_GPU_JOBS + NUM_CPU_JOBS
-    print(f"[TEST] Waiting for {expected_files} results in NFS...")
+    print(f"[TEST] Waiting for {expected_files} results...")
 
     while True:
         files = glob.glob(f"{RESULTS_DIR}/*.json")
@@ -69,48 +56,59 @@ def run_test():
 
     print("\n[TEST] All jobs finished. Analyzing placement...")
 
-    # 5. Verifica e Analisi
+    # Analysis
     gpu_nodes_used = set()
     cpu_nodes_used = set()
     errors = 0
 
-    # Analisi Job GPU
     for i in range(NUM_GPU_JOBS):
         fpath = os.path.join(RESULTS_DIR, f"job-gpu-{i}.json")
         if os.path.exists(fpath):
-            node, jid = check_placement(fpath)
+            node, _ = check_placement(fpath)
             gpu_nodes_used.add(node)
-            print(f"   [GPU Job] {jid} executed on: {node}")
         else:
-            print(f"   [ERROR] Missing report for job-gpu-{i}")
             errors += 1
 
-    # Analisi Job CPU
     for i in range(NUM_CPU_JOBS):
         fpath = os.path.join(RESULTS_DIR, f"job-cpu-{i}.json")
         if os.path.exists(fpath):
-            node, jid = check_placement(fpath)
+            node, _ = check_placement(fpath)
             cpu_nodes_used.add(node)
-            print(f"   [CPU Job] {jid} executed on: {node}")
         else:
-            print(f"   [ERROR] Missing report for job-cpu-{i}")
             errors += 1
 
-    print("\n--- RESULT SUMMARY ---")
-    print(f"Nodes handling GPU workload: {gpu_nodes_used}")
-    print(f"Nodes handling CPU workload: {cpu_nodes_used}")
-
-    # Verifica Intersezione (Se vuota, isolamento perfetto)
     intersection = gpu_nodes_used.intersection(cpu_nodes_used)
 
     if len(intersection) == 0 and errors == 0:
-        print("\nPASSED: Perfect isolation between GPU and CPU workloads.")
-    elif len(intersection) > 0:
-        print(f"\nFAILED: Overlap detected! Nodes {intersection} executed both types.")
+        result_status = "PASSED"
+        print("\n✅ PASSED: Perfect isolation.")
     else:
-        print("\nWARNING: Test completed with execution errors.")
+        result_status = "FAILED"
+        print(f"\n❌ FAILED: Overlap or Errors.")
 
-    # Cleanup finale
+    # --- SALVATAGGIO JSON ---
+    output_data = {
+        "test_name": "placement_constraints",
+        "orchestrator": "swarm",
+        "parameters": {
+            "gpu_jobs": NUM_GPU_JOBS,
+            "cpu_jobs": NUM_CPU_JOBS
+        },
+        "results": {
+            "status": result_status,
+            "gpu_nodes_used": list(gpu_nodes_used),  # Convertiamo set in list per JSON
+            "cpu_nodes_used": list(cpu_nodes_used),
+            "errors": errors,
+            "overlap_detected": len(intersection) > 0
+        }
+    }
+
+    os.makedirs(os.path.dirname(JSON_OUTPUT_FILE), exist_ok=True)
+    with open(JSON_OUTPUT_FILE, "w") as f:
+        json.dump(output_data, f, indent=2)
+
+    print(f"[RESULT] Report saved to: {JSON_OUTPUT_FILE}")
+
     driver.clean_jobs()
 
 
