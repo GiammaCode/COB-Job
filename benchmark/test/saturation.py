@@ -12,12 +12,9 @@ sys.path.append(parent_dir)
 
 from drivers.swarm_driver import SwarmDriver
 
-# CONFIGURAZIONE
-# Se hai 2 nodi con 1 CPU l'uno (Totale 2 CPU), e chiedi 0.5 CPU a job -> max 4 job contemporanei.
-# Se lanci 20 job, si creerà una coda.
-NUM_JOBS = 20
-JOB_DURATION = 10
-CPU_REQ = "0.3"  # Riserva 0.3 CPU per job (adatta se il test finisce troppo presto)
+NUM_JOBS = 30
+JOB_DURATION = 15
+CPU_REQ = "1.0"
 RESULTS_DIR = "/srv/nfs/cob_results"
 JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/saturation.json")
 
