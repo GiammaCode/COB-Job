@@ -26,25 +26,25 @@ class SwarmDriver:
         if cpu_reservation:
             args += f" --reserve-cpu {cpu_reservation}"
 
-        # Gestione comando custom (utile per far crashare il job nel Test 4)
-        cmd_overwrite = ""
+        # COSTRUZIONE COMANDO
+        # Nota: 'command' va aggiunto SOLO alla fine, dopo l'immagine
+        final_cmd = ""
         if command:
-            cmd_overwrite = f"--command '{command}'"
+            final_cmd = f" {command}"
 
-        # Comando Docker Service Create
         cmd = (
             f"docker service create "
             f"--detach "
             f"--name {service_name} "
             f"--replicas 1 "
-            f"--restart-condition {restart_policy} "  # Qui gestiamo il riavvio
+            f"--restart-condition {restart_policy} "
             f"--env JOB_ID={job_id} "
             f"--env JOB_TYPE={job_type} "
             f"--env DURATION={duration} "
             f"--mount {self.nfs_mount} "
             f"{args} "
-            f"{cmd_overwrite} "
-            f"{self.image}"
+            f"{self.image}"  # L'immagine va prima...
+            f"{final_cmd}"  # ...il comando custom va per ultimo!
         )
 
         res = self._run(cmd)
