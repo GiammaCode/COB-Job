@@ -27,6 +27,7 @@ class SwarmDriver:
         # Comando Docker Service Create (One-Shot)
         cmd = (
             f"docker service create "
+            f"--detach "
             f"--name {service_name} "
             f"--replicas 1 "
             f"--restart-condition none "
@@ -49,4 +50,4 @@ class SwarmDriver:
         # Trova tutti i servizi del benchmark e li rimuove
         cmd = f"docker service ls --filter name={self.stack_name} -q | xargs -r docker service rm"
         self._run(cmd)
-        time.sleep(5) 
+        time.sleep(5)
