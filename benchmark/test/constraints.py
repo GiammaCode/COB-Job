@@ -11,7 +11,6 @@ sys.path.append(parent_dir)
 
 from drivers.swarm_driver import SwarmDriver
 
-# CONFIGURAZIONE
 RESULTS_DIR = "/srv/nfs/cob_results"
 NUM_GPU_JOBS = 3
 NUM_CPU_JOBS = 3
@@ -28,7 +27,7 @@ def check_placement(file_path):
 
 
 def run_test():
-    print(f"--- TEST 2: PLACEMENT CONSTRAINTS COMPLIANCE ---")
+    print(f"--- TEST: PLACEMENT CONSTRAINTS COMPLIANCE ---")
     driver = SwarmDriver()
     driver.clean_jobs()
     os.system(f"rm -f {RESULTS_DIR}/*.json")
@@ -37,11 +36,13 @@ def run_test():
 
     # Launch GPU Jobs
     for i in range(NUM_GPU_JOBS):
-        driver.submit_job(job_id=f"job-gpu-{i}", job_type="sleep", duration=5, constraints={"hardware": "gpu"})
+        driver.submit_job(job_id=f"job-gpu-{i}", job_type="sleep",
+                          duration=5, constraints={"hardware": "gpu"})
 
     # Launch CPU Jobs
     for i in range(NUM_CPU_JOBS):
-        driver.submit_job(job_id=f"job-cpu-{i}", job_type="sleep", duration=5, constraints={"hardware": "cpu"})
+        driver.submit_job(job_id=f"job-cpu-{i}", job_type="sleep",
+                          duration=5, constraints={"hardware": "cpu"})
 
     # Wait
     expected_files = NUM_GPU_JOBS + NUM_CPU_JOBS
@@ -61,6 +62,7 @@ def run_test():
     cpu_nodes_used = set()
     errors = 0
 
+    #Check nodes
     for i in range(NUM_GPU_JOBS):
         fpath = os.path.join(RESULTS_DIR, f"job-gpu-{i}.json")
         if os.path.exists(fpath):
@@ -86,7 +88,6 @@ def run_test():
         result_status = "FAILED"
         print(f"\nFAILED: Overlap or Errors.")
 
-    # --- SALVATAGGIO JSON ---
     output_data = {
         "test_name": "placement_constraints",
         "orchestrator": "swarm",
@@ -96,7 +97,7 @@ def run_test():
         },
         "results": {
             "status": result_status,
-            "gpu_nodes_used": list(gpu_nodes_used),  # Convertiamo set in list per JSON
+            "gpu_nodes_used": list(gpu_nodes_used),
             "cpu_nodes_used": list(cpu_nodes_used),
             "errors": errors,
             "overlap_detected": len(intersection) > 0

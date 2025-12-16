@@ -1,0 +1,11 @@
+{
+  "test_name": "parallelism_fairness",
+  "orchestrator": "swarm",
+  "distribution": {
+    "casamenti-Standard-PC-i440FX-PIIX-1996": 4,
+    "gianmaria-Standard-PC-i440FX-PIIX-1996": 4,
+    "giamma-Standard-PC-i440FX-PIIX-1996": 4
+  },
+  "stdev": 0.0,
+  "balanced": true
+}

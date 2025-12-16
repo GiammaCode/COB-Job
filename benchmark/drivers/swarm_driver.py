@@ -17,7 +17,6 @@ class SwarmDriver:
                    restart_policy="none", command=None):
         service_name = f"{self.stack_name}_{job_id}"
 
-        # Argomenti base
         args = ""
         if constraints:
             for key, val in constraints.items():
@@ -26,8 +25,6 @@ class SwarmDriver:
         if cpu_reservation:
             args += f" --reserve-cpu {cpu_reservation}"
 
-        # COSTRUZIONE COMANDO
-        # Nota: 'command' va aggiunto SOLO alla fine, dopo l'immagine
         final_cmd = ""
         if command:
             final_cmd = f" {command}"
@@ -43,8 +40,8 @@ class SwarmDriver:
             f"--env DURATION={duration} "
             f"--mount {self.nfs_mount} "
             f"{args} "
-            f"{self.image}"  # L'immagine va prima...
-            f"{final_cmd}"  # ...il comando custom va per ultimo!
+            f"{self.image}"  
+            f"{final_cmd}"
         )
 
         res = self._run(cmd)
@@ -54,20 +51,25 @@ class SwarmDriver:
         return True
 
     def get_node_distribution(self):
-        """Restituisce un dizionario {nome_nodo: numero_job_running}"""
-        # Formattiamo l'output per avere solo il nodo dei task attivi
-        cmd = f"docker service ps $(docker service ls -q --filter name={self.stack_name}) --format '{{{{.Node}}}}' --filter desired-state=running"
+        """Return {name_node: number_job_running}"""
+        # Retrieve only task actived
+        cmd = (f"docker service ps $(docker service ls -q "
+               f"--filter name={self.stack_name}) "
+               f"--format '{{{{.Node}}}}' "
+               f"--filter desired-state=running")
+
         res = self._run(cmd)
         nodes = res.stdout.strip().split('\n')
-        # Filtra righe vuote
+        #Filter empty raw
         nodes = [n for n in nodes if n]
         return dict(collections.Counter(nodes))
 
     def get_task_history(self, job_id):
-        """Restituisce la storia dei task per un servizio (utile per vedere i crash)"""
+        """Return {task_name: task_history}"""
         service_name = f"{self.stack_name}_{job_id}"
         # Prende ID, Stato Corrente, Stato Desiderato, Errore
-        cmd = f"docker service ps {service_name} --format '{{{{.CurrentState}}}}|{{{{.DesiredState}}}}|{{{{.Error}}}}'"
+        cmd = (f"docker service ps {service_name} "
+               f"--format '{{{{.CurrentState}}}}|{{{{.DesiredState}}}}|{{{{.Error}}}}'")
         res = self._run(cmd)
         return res.stdout.strip().split('\n')
 

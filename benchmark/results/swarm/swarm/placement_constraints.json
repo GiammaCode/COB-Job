@@ -1,0 +1,23 @@
+{
+  "test_name": "placement_constraints",
+  "orchestrator": "swarm",
+  "parameters": {
+    "gpu_jobs": 3,
+    "cpu_jobs": 3
+  },
+  "results": {
+    "status": "PASSED",
+    "gpu_nodes_used": [
+      "1325d31ebe4e",
+      "95afb8a96691",
+      "1639b17be474"
+    ],
+    "cpu_nodes_used": [
+      "60ff609ea277",
+      "f697c5949474",
+      "a1417656af8f"
+    ],
+    "errors": 0,
+    "overlap_detected": false
+  }
+}

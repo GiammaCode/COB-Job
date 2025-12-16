@@ -1,0 +1,13 @@
+{
+  "test_name": "burst_throughput",
+  "orchestrator": "swarm",
+  "parameters": {
+    "num_jobs": 10,
+    "job_duration": 5
+  },
+  "results": {
+    "launch_overhead_seconds": 0.3072,
+    "total_makespan_seconds": 6.3092,
+    "throughput_jobs_per_sec": 1.585
+  }
+}

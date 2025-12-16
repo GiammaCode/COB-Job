@@ -13,42 +13,36 @@ def run_test():
     driver = SwarmDriver()
     driver.clean_jobs()
 
-    # CONFIGURAZIONE
     # Abbiamo 3 nodi x 4 CPU = 12 CPU Totali.
-    # Lanciamo 12 Job da 1 CPU per occupare tutto esattamente.
     NUM_JOBS = 12
     CPU_REQ = "1.0"
 
-    print(f"--- TEST 5: PARALLELISM & FAIRNESS ({NUM_JOBS} Jobs on Cluster) ---")
+    print(f"--- TEST: PARALLELISM & FAIRNESS ({NUM_JOBS} Jobs on Cluster) ---")
 
-    # 1. Lancio massivo
     print("[TEST] Submitting jobs...")
     for i in range(NUM_JOBS):
         driver.submit_job(
             job_id=f"fair_{i}",
             job_type="cpu",
-            duration=20,  # Durata sufficiente per fare lo snapshot
+            duration=20,
             cpu_reservation=CPU_REQ
         )
 
     print("[TEST] Waiting 5s for scheduler to settle...")
-    time.sleep(5)  # Aspettiamo che lo scheduler piazzi tutti
+    time.sleep(5)
 
     # 2. Analisi Distribuzione
     distribution = driver.get_node_distribution()
     print(f"\n[ANALYSIS] Node Distribution: {distribution}")
 
-    # Se un nodo ha 0 job, non appare nel dizionario, dobbiamo aggiungerlo per correttezza statistica
-    # (Opzionale: se conosci i nomi dei nodi a priori sarebbe meglio, ma qui ci basiamo su quelli attivi)
-
     counts = list(distribution.values())
 
     if not counts:
-        print("❌ Error: No running jobs found.")
+        print("Error: No running jobs found.")
         driver.clean_jobs()
         return
 
-    # Calcoli Statistici
+    #Stats
     total_jobs = sum(counts)
     avg_jobs = statistics.mean(counts)
     try:
@@ -64,14 +58,12 @@ def run_test():
     # Interpretazione
     # Deviazione Standard bassa (es. < 1) significa ottimo bilanciamento.
     # Esempio perfetto su 3 nodi con 12 job: [4, 4, 4] -> Stdev 0.0
-    # Esempio sbilanciato: [6, 6, 0] -> Stdev alto
 
     if stdev < 1.5:
-        print("✅ STATUS: BALANCED (Scheduler is distributing load fairly)")
+        print("STATUS: BALANCED (Scheduler is distributing load fairly)")
     else:
-        print("⚠️ STATUS: UNBALANCED (Load is concentrated on few nodes)")
+        print("STATUS: UNBALANCED (Load is concentrated on few nodes)")
 
-    # Salvataggio JSON
     results = {
         "test_name": "parallelism_fairness",
         "orchestrator": "swarm",
