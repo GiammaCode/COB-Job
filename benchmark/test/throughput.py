@@ -11,15 +11,14 @@ sys.path.append(parent_dir)
 
 from drivers.swarm_driver import SwarmDriver
 
-# CONFIGURAZIONE
-NUM_JOBS = 10  # Numero di job per il test
+NUM_JOBS = 10
 JOB_DURATION = 5
 RESULTS_DIR = "/srv/nfs/cob_results"
 JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/throughput.json")
 
 
 def run_test():
-    print(f"--- TEST 1: BURST THROUGHPUT ({NUM_JOBS} Jobs) ---")
+    print(f"--- TEST: BURST THROUGHPUT ({NUM_JOBS} Jobs) ---")
 
     driver = SwarmDriver()
     driver.clean_jobs()
@@ -28,7 +27,6 @@ def run_test():
     print("[TEST] Launching jobs...")
     start_time = time.time()
 
-    # Burst Launch
     for i in range(NUM_JOBS):
         job_id = f"burst-{i}"
         driver.submit_job(job_id=job_id, job_type="cpu", duration=JOB_DURATION)
@@ -53,7 +51,6 @@ def run_test():
     print(f"\n[TEST] DONE! Total Makespan: {total_time:.2f}s")
     print(f"[TEST] Throughput: {throughput:.2f} jobs/sec")
 
-    # --- SALVATAGGIO JSON ---
     output_data = {
         "test_name": "burst_throughput",
         "orchestrator": "swarm",
@@ -68,7 +65,6 @@ def run_test():
         }
     }
 
-    # Crea la cartella se non esiste
     os.makedirs(os.path.dirname(JSON_OUTPUT_FILE), exist_ok=True)
 
     with open(JSON_OUTPUT_FILE, "w") as f:

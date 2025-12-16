@@ -20,15 +20,13 @@ JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/saturation.json")
 
 
 def run_test():
-    print(f"--- TEST 3: SATURATION & QUEUEING ({NUM_JOBS} Jobs, {CPU_REQ} CPU req) ---")
+    print(f"--- TEST: SATURATION & QUEUEING ({NUM_JOBS} Jobs, {CPU_REQ} CPU req) ---")
 
     driver = SwarmDriver()
     driver.clean_jobs()
     os.system(f"rm -f {RESULTS_DIR}/*.json")
 
-    # Dizionario per tracciare quando ABBIAMO INVIATO il job
     submission_times = {}
-
     print("[TEST] Burst Launching jobs...")
 
     for i in range(NUM_JOBS):
@@ -46,7 +44,6 @@ def run_test():
 
     print(f"[TEST] All {NUM_JOBS} jobs submitted. Monitoring queue processing...")
 
-    # Attesa completamento
     while True:
         files = glob.glob(f"{RESULTS_DIR}/sat-*.json")
         completed = len(files)
@@ -57,8 +54,6 @@ def run_test():
         time.sleep(1)
 
     print("\n[TEST] All jobs finished. Analyzing Queue Times...")
-
-    # Analisi Tempi di Coda
     queue_times = []
 
     for i in range(NUM_JOBS):
@@ -78,9 +73,8 @@ def run_test():
             if wait_time < 0: wait_time = 0
 
             queue_times.append(wait_time)
-            # print(f"   Job {job_id}: Waited {wait_time:.2f}s")
 
-    # Statistiche
+    # Stats
     avg_wait = np.mean(queue_times)
     max_wait = np.max(queue_times)
     min_wait = np.min(queue_times)
@@ -90,11 +84,10 @@ def run_test():
     print(f"Max Queue Time:     {max_wait:.2f}s")
 
     if max_wait > 2.0:
-        print("✅ SUCCESS: Queueing behavior detected (Saturation reached).")
+        print("SUCCESS: Queueing behavior detected (Saturation reached).")
     else:
-        print("⚠️ WARNING: Queue times are very low. Cluster was not saturated. Increase CPU_REQ or NUM_JOBS.")
+        print("WARNING: Queue times are very low. Cluster was not saturated. Increase CPU_REQ or NUM_JOBS.")
 
-    # --- SALVATAGGIO JSON ---
     output_data = {
         "test_name": "saturation_queueing",
         "orchestrator": "swarm",
