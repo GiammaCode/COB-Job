@@ -9,7 +9,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from drivers.swarm_driver import SwarmDriver
+#from drivers.swarm_driver import SwarmDriver
+from drivers.k8s_driver import K8sDriver
 
 NUM_JOBS = 10
 JOB_DURATION = 5
@@ -20,7 +21,8 @@ JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/throughput.json")
 def run_test():
     print(f"--- TEST: BURST THROUGHPUT ({NUM_JOBS} Jobs) ---")
 
-    driver = SwarmDriver()
+    #driver = SwarmDriver()
+    driver = K8sDriver()
     driver.clean_jobs()
     os.system(f"rm -f {RESULTS_DIR}/*.json")
 
