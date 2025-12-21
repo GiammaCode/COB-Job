@@ -5,13 +5,13 @@ import collections
 import os
 
 class K8sDriver:
-    def __init__(self, stack_name="cob-job", image="192.168.15.9:5000/cob-job-worker:latest"):
-        self.stack_name = stack_name
+    def __init__(self, namespace="cob-job", image="192.168.15.9:5000/cob-job-worker:latest"):
+        self.namespace = namespace
         self.image = image
         # Percorso sul nodo HOST dove risiedono i risultati (NFS mount point)
         self.host_path = "/srv/nfs/cob_results"
         # Percorso dentro il CONTAINER dove scrive il worker
-        self.nfs_mount = "type=bind,source=/srv/nfs/cob_results,target=/mnt/results"
+        self.container_mount = "/mnt/results"
 
     def _run(self, cmd):
         return subprocess.run(cmd, shell=True, capture_output=True, text=True)
