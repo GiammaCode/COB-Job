@@ -141,4 +141,13 @@ class K8sDriver:
 
     def clean_jobs(self):
         print(f"[K8S] Cleaning jobs in namespace {self.namespace}...")
-        cmd =
+        cmd = f"kubectl delete jobs -l app=cob-job -n {self.namespace} --wait=false"
+        self._run(cmd)
+        # Per sicurezza puliamo anche i pod orfani
+        time.sleep(1)
+
+    def get_task_history(self, job_id):
+        """Ritorna le righe di stato dei pod per un job specifico"""
+        cmd = f"kubectl get pods -n {self.namespace} -l job_id={job_id} --no-headers"
+        res = self._run(cmd)
+        return res.stdout.strip().split('\n')
