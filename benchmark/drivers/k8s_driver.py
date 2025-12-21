@@ -1,118 +1,104 @@
-import subprocess
 import time
-import json
-import collections
+import sys
 import os
+import json
 
-class K8sDriver:
-    def __init__(self, namespace="cob-job", image="192.168.15.9:5000/cob-job-worker:latest"):
-        self.namespace = namespace
-        self.image = image
-        # Percorso sul nodo HOST dove risiedono i risultati (NFS mount point)
-        self.host_path = "/srv/nfs/cob_results"
-        # Percorso dentro il CONTAINER dove scrive il worker
-        self.container_mount = "/mnt/results"
+# Setup path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
-    def _run(self, cmd):
-        return subprocess.run(cmd, shell=True, capture_output=True, text=True)
+from drivers.k8s_driver import K8sDriver
 
-    def submit_job(self, job_id, job_type="cpu", duration=10, constraints=None, cpu_reservation=None,
-                   restart_policy="Never", command=None):
-        # I nomi in K8s devono essere minuscoli e senza caratteri strani
-        safe_job_id = str(job_id).lower().replace("_", "-")
-        job_name = f"{self.namespace}-{safe_job_id}"
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/recovery.json")
 
-        # Risorse (CPU Request)
-        resources_section = {}
-        if cpu_reservation:
-            resources_section = {
-                "requests": {"cpu": str(cpu_reservation)}
-            }
 
-        # Constraints (Node Selector)
-        # Swarm usa: node.labels.type == gpu
-        # K8s usa: nodeSelector: {type: gpu}
-        node_selector = {}
-        if constraints:
-            node_selector = constraints
+def run_test():
+    print("--- TEST: BATCH FAULT RECOVERY (K8s) ---")
+    driver = K8sDriver()
+    driver.clean_jobs()
 
-        # Costruzione Manifest JSON
-        job_manifest = {
-            "apiVersion": "batch/v1",
-            "kind": "Job",
-            "metadata": {
-                "name": job_name,
-                "namespace": self.namespace,
-                "labels": {"app": "cob-job", "job_id": str(job_id)}
-            },
-            "spec": {
-                "backoffLimit": 0,  # Non riprovare se fallisce (comportamento 'none')
-                "ttlSecondsAfterFinished": 600,  # Pulizia automatica dopo 10 min
-                "template": {
-                    "metadata": {
-                        "labels": {"app": "cob-job", "job_id": str(job_id)}
-                    },
-                    "spec": {
-                        "restartPolicy": "Never",
-                        "containers": [{
-                            "name": "worker",
-                            "image": self.image,
-                            "imagePullPolicy": "Always",
-                            "env": [
-                                {"name": "JOB_ID", "value": str(job_id)},
-                                {"name": "JOB_TYPE", "value": str(job_type)},
-                                {"name": "DURATION", "value": str(duration)},
-                                {"name": "OUTPUT_DIR", "value": self.container_mount}
-                            ],
-                            "volumeMounts": [{
-                                "name": "results-vol",
-                                "mountPath": self.container_mount
-                            }],
-                            "resources": resources_section
-                        }],
-                        "volumes": [{
-                            "name": "results-vol",
-                            "hostPath": {
-                                "path": self.host_path,
-                                "type": "Directory"  # Fallisce se la dir non esiste sul nodo
-                            }
-                        }]
-                    }
-                }
-            }
-        }
+    job_id = "recovery-test"
 
-        # Aggiunta Node Selector se presente
-        if node_selector:
-            job_manifest["spec"]["template"]["spec"]["nodeSelector"] = node_selector
+    # 1. Lanciamo un "Suicide Job"
+    # Il comando sleep 5 simula lavoro, poi exit 1 simula il crash.
+    # restart_policy="Never" forza K8s a creare un NUOVO pod invece di riavviare il container,
+    # rendendo il recovery visibile come "Task Replacement".
+    print(f"[TEST] Launching 'Suicide Job' (sleep 5; exit 1)...")
 
-        # Apply via stdin
-        manifest_str = json.dumps(job_manifest)
-        cmd = f"kubectl apply -f - -n {self.namespace}"
+    success = driver.submit_job(
+        job_id=job_id,
+        cpu_reservation="0.1",
+        restart_policy="Never",
+        command='sh -c "sleep 5; echo CRASHING NOW; exit 1"'
+    )
 
-        # Eseguiamo passando il JSON allo standard input di kubectl
-        res = subprocess.run(cmd, input=manifest_str, shell=True, text=True, capture_output=True)
+    if not success:
+        print("[ERROR] Failed to submit job.")
+        return
 
-        if res.returncode != 0:
-            print(f"[K8S] Error launching {job_id}: {res.stderr}")
-            return False
-        return True
+    print("[TEST] Job submitted. Monitoring recovery (20s)...")
 
-    def get_node_distribution(self):
-        """Ritorna {nome_nodo: numero_pod_running}"""
-        cmd = (f"kubectl get pods -n {self.namespace} "
-               f"-l app=cob-job "
-               f"--field-selector=status.phase=Running "
-               f"-o jsonpath='{{.items[*].spec.nodeName}}'")
-        res = self._run(cmd)
-        nodes = res.stdout.strip().split()
-        return dict(collections.Counter(nodes))
+    # Monitoraggio
+    start_time = time.time()
+    recovered = False
+    failure_detected = False
+    history_log = []
 
-    def clean_jobs(self):
-        print(f"[K8S] Cleaning jobs in namespace {self.namespace}...")
-        # Cancella tutti i job creati da questo benchmark
-        cmd = f"kubectl delete jobs -l app=cob-job -n {self.namespace} --wait=false"
-        self._run(cmd)
-        # Per sicurezza puliamo anche i pod orfani (anche se delete job dovrebbe farlo)
+    for i in range(30):  # Monitora per 30 secondi
+        history = driver.get_task_history(job_id)
+
+        # Conta quanti pod sono in errore e quanti running
+        # K8s usa "Error" per exit code != 0
+        error_count = sum(1 for line in history if "Error" in line or "Failed" in line)
+        running_count = sum(1 for line in history if "Running" in line)
+        completed_count = sum(1 for line in history if "Completed" in line)
+
+        # Log status
+        current_status = "Unknown"
+        if error_count > 0: current_status = "Error Detected"
+        if running_count > 0: current_status = "Running"
+
+        # Detection logic
+        if error_count > 0 and not failure_detected:
+            print(f"   [{i}s] Detection: Pod has failed (Error/Crash). Waiting for restart...")
+            failure_detected = True
+
+        # Se abbiamo rilevato un fallimento E ora c'è un pod Running (o Completed se è stato velocissimo)
+        if failure_detected and (running_count > 0 or completed_count > 0):
+            print(f"   [{i}s] SUCCESS: New Pod spawned and is Active!")
+            recovered = True
+            break
+
         time.sleep(1)
 
+    print("-" * 30)
+    if recovered:
+        print("RESULT: PASSED (Job recovered automatically)")
+        status = "PASSED"
+    else:
+        print("RESULT: FAILED (No recovery detected or timeout)")
+        status = "FAILED"
+
+    # Save Results
+    output_data = {
+        "test_name": "fault_recovery",
+        "orchestrator": "k8s",
+        "results": {
+            "status": status,
+            "failure_detected": failure_detected,
+            "recovered": recovered,
+            "mechanism": "Pod Replacement (restartPolicy: Never)"
+        }
+    }
+
+    os.makedirs(os.path.dirname(JSON_OUTPUT_FILE), exist_ok=True)
+    with open(JSON_OUTPUT_FILE, "w") as f:
+        json.dump(output_data, f, indent=2)
+    print(f"[RESULT] Report saved to: {JSON_OUTPUT_FILE}")
+
+    driver.clean_jobs()
+
+
+if __name__ == "__main__":
+    run_test()
