@@ -39,13 +39,21 @@ def run_test():
 
     # Launch GPU Jobs
     for i in range(NUM_GPU_JOBS):
-        driver.submit_job(job_id=f"job-gpu-{i}", job_type="sleep",
-                          duration=5, constraints={"hardware": "gpu"})
+        driver.submit_job(job_id=f"job-gpu-{i}",
+                          job_type="sleep",
+                          duration=5,
+                          constraints={"type": "gpu"}
+                          #constraints={"hardware": "gpu"}
+                          )
 
     # Launch CPU Jobs
     for i in range(NUM_CPU_JOBS):
-        driver.submit_job(job_id=f"job-cpu-{i}", job_type="sleep",
-                          duration=5, constraints={"hardware": "cpu"})
+        driver.submit_job(job_id=f"job-cpu-{i}",
+                          job_type="sleep",
+                          duration=5,
+                          constraints={"type": "cpu"}
+                          #constraints={"hardware": "cpu"}
+                          )
 
     # Wait
     expected_files = NUM_GPU_JOBS + NUM_CPU_JOBS
