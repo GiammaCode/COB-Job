@@ -21,15 +21,13 @@ def run_test():
     job_id = "recovery-test"
 
     # 1. Lanciamo un "Suicide Job"
-    # Il comando sleep 5 simula lavoro, poi exit 1 simula il crash.
-    # restart_policy="Never" forza K8s a creare un NUOVO pod invece di riavviare il container,
-    # rendendo il recovery visibile come "Task Replacement".
+    # Usa 'Never' per costringere K8s a creare un NUOVO Pod quando il primo muore
     print(f"[TEST] Launching 'Suicide Job' (sleep 5; exit 1)...")
 
     success = driver.submit_job(
         job_id=job_id,
         cpu_reservation="0.1",
-        restart_policy="Never",
+        restart_policy="Never",  # <--- FONDAMENTALE (era 'on-failure')
         command='sh -c "sleep 5; echo CRASHING NOW; exit 1"'
     )
 
@@ -37,34 +35,28 @@ def run_test():
         print("[ERROR] Failed to submit job.")
         return
 
-    print("[TEST] Job submitted. Monitoring recovery (20s)...")
+    print("[TEST] Job submitted. Monitoring recovery (30s)...")  # <--- 30s (era 20s)
 
     # Monitoraggio
     start_time = time.time()
     recovered = False
     failure_detected = False
-    history_log = []
 
-    for i in range(30):  # Monitora per 30 secondi
+    # Loop di monitoraggio esteso a 30s per dare tempo a K8s di reagire
+    for i in range(30):
         history = driver.get_task_history(job_id)
 
-        # Conta quanti pod sono in errore e quanti running
-        # K8s usa "Error" per exit code != 0
+        # Cerca "Error" (K8s) invece di "Failed" (Swarm)
         error_count = sum(1 for line in history if "Error" in line or "Failed" in line)
         running_count = sum(1 for line in history if "Running" in line)
         completed_count = sum(1 for line in history if "Completed" in line)
-
-        # Log status
-        current_status = "Unknown"
-        if error_count > 0: current_status = "Error Detected"
-        if running_count > 0: current_status = "Running"
 
         # Detection logic
         if error_count > 0 and not failure_detected:
             print(f"   [{i}s] Detection: Pod has failed (Error/Crash). Waiting for restart...")
             failure_detected = True
 
-        # Se abbiamo rilevato un fallimento E ora c'è un pod Running (o Completed se è stato velocissimo)
+        # Recovery Logic: Abbiamo visto un errore PRIMA, e ORA c'è un pod Running
         if failure_detected and (running_count > 0 or completed_count > 0):
             print(f"   [{i}s] SUCCESS: New Pod spawned and is Active!")
             recovered = True
