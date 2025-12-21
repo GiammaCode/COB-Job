@@ -108,7 +108,6 @@ class K8sDriver:
         nodes = res.stdout.strip().split()
         return dict(collections.Counter(nodes))
 
-
     def clean_jobs(self):
         print(f"[K8S] Cleaning jobs in namespace {self.namespace}...")
         # Cancella tutti i job creati da questo benchmark
@@ -116,3 +115,4 @@ class K8sDriver:
         self._run(cmd)
         # Per sicurezza puliamo anche i pod orfani (anche se delete job dovrebbe farlo)
         time.sleep(1)
+

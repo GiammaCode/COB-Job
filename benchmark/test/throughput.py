@@ -15,7 +15,7 @@ from drivers.k8s_driver import K8sDriver
 NUM_JOBS = 10
 JOB_DURATION = 5
 RESULTS_DIR = "/srv/nfs/cob_results"
-JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/throughput.json")
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/throughput.json")
 
 
 def run_test():
@@ -55,7 +55,7 @@ def run_test():
 
     output_data = {
         "test_name": "burst_throughput",
-        "orchestrator": "swarm",
+        "orchestrator": "k8s",
         "parameters": {
             "num_jobs": NUM_JOBS,
             "job_duration": JOB_DURATION

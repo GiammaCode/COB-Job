@@ -61,7 +61,7 @@ def run_test():
 
     print("-" * 30)
     if recovered:
-        print("RESULT: PASSED. Swarm successfully rescheduled the crashed job.")
+        print("RESULT: PASSED. Orchestrator successfully rescheduled the crashed job.")
     else:
         print("RESULT: FAILED. Job crashed but was not rescheduled.")
 

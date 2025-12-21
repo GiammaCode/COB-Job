@@ -17,7 +17,7 @@ NUM_JOBS = 30
 JOB_DURATION = 15
 CPU_REQ = "1.0"
 RESULTS_DIR = "/srv/nfs/cob_results"
-JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/saturation.json")
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/saturation.json")
 
 
 def run_test():
@@ -93,7 +93,7 @@ def run_test():
 
     output_data = {
         "test_name": "saturation_queueing",
-        "orchestrator": "swarm",
+        "orchestrator": "k8s",
         "parameters": {
             "num_jobs": NUM_JOBS,
             "cpu_reservation": CPU_REQ,

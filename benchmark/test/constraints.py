@@ -15,7 +15,7 @@ from drivers.k8s_driver import K8sDriver
 RESULTS_DIR = "/srv/nfs/cob_results"
 NUM_GPU_JOBS = 3
 NUM_CPU_JOBS = 3
-JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/swarm/placement_constraints.json")
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/placement_constraints.json")
 
 
 def check_placement(file_path):
@@ -93,7 +93,7 @@ def run_test():
 
     output_data = {
         "test_name": "placement_constraints",
-        "orchestrator": "swarm",
+        "orchestrator": "k8s",
         "parameters": {
             "gpu_jobs": NUM_GPU_JOBS,
             "cpu_jobs": NUM_CPU_JOBS
