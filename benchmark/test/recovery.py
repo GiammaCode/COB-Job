@@ -5,11 +5,13 @@ import os
 # Aggiunge la cartella superiore al path per importare i moduli
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from drivers.swarm_driver import SwarmDriver
-
+#from drivers.swarm_driver import SwarmDriver
+from drivers.k8s_driver import K8sDriver
 
 def run_test():
-    driver = SwarmDriver()
+    #driver = SwarmDriver()
+    driver = K8sDriver()
+
     driver.clean_jobs()
 
     print("--- TEST 4: BATCH FAULT RECOVERY (At-Least-Once) ---")
