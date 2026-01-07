@@ -10,7 +10,8 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 #from drivers.swarm_driver import SwarmDriver
-from drivers.k8s_driver import K8sDriver
+#from drivers.k8s_driver import K8sDriver
+from drivers.nomad_driver import NomadDriver
 
 NUM_JOBS = 10
 JOB_DURATION = 5
@@ -22,7 +23,10 @@ def run_test():
     print(f"--- TEST: BURST THROUGHPUT ({NUM_JOBS} Jobs) ---")
 
     #driver = SwarmDriver()
-    driver = K8sDriver()
+    #driver = K8sDriver()
+    driver = NomadDriver()
+
+
     driver.clean_jobs()
     os.system(f"rm -f {RESULTS_DIR}/*.json")
 

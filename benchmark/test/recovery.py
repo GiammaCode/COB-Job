@@ -8,14 +8,18 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from drivers.k8s_driver import K8sDriver
+#from drivers.k8s_driver import K8sDriver
+from drivers.nomad_driver import NomadDriver
 
 JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/recovery.json")
 
 
 def run_test():
     print("--- TEST: BATCH FAULT RECOVERY (K8s) ---")
-    driver = K8sDriver()
+    #driver = K8sDriver()
+    driver = NomadDriver()
+
+
     driver.clean_jobs()
 
     job_id = "recovery-test"
@@ -27,7 +31,7 @@ def run_test():
     success = driver.submit_job(
         job_id=job_id,
         cpu_reservation="0.1",
-        restart_policy="Never",  # <--- FONDAMENTALE (era 'on-failure')
+        restart_policy="allow-retry",
         command='sh -c "sleep 5; echo CRASHING NOW; exit 1"'
     )
 

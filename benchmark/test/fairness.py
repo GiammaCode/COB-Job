@@ -7,12 +7,14 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 #from drivers.swarm_driver import SwarmDriver
-from drivers.k8s_driver import K8sDriver
+#from drivers.k8s_driver import K8sDriver
+from drivers.nomad_driver import NomadDriver
 
 
 def run_test():
     #driver = SwarmDriver()
-    driver = K8sDriver()
+    #driver = K8sDriver()
+    driver = NomadDriver()
 
     driver.clean_jobs()
 

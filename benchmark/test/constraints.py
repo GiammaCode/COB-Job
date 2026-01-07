@@ -10,7 +10,8 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 #from drivers.swarm_driver import SwarmDriver
-from drivers.k8s_driver import K8sDriver
+#from drivers.k8s_driver import K8sDriver
+from drivers.nomad_driver import NomadDriver
 
 RESULTS_DIR = "/srv/nfs/cob_results"
 NUM_GPU_JOBS = 3
@@ -30,7 +31,9 @@ def check_placement(file_path):
 def run_test():
     print(f"--- TEST: PLACEMENT CONSTRAINTS COMPLIANCE ---")
     #driver = SwarmDriver()
-    driver = K8sDriver()
+    #driver = K8sDriver()
+    driver = NomadDriver()
+
 
     driver.clean_jobs()
     os.system(f"rm -f {RESULTS_DIR}/*.json")
