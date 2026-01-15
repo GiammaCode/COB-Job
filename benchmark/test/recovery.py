@@ -47,9 +47,11 @@ def run_test():
     failure_detected = False
 
     # Loop di monitoraggio esteso a 30s per dare tempo a K8s di reagire
-    for i in range(30):
+    for i in range(60):
         history = driver.get_task_history(job_id)
 
+        if i % 5 == 0:  # Stampa ogni 5 secondi per non intasare
+            print(f"   [DEBUG {i}s] History: {history}")
 
         # Cerca sia "Failed" (Swarm) che "failed" (Nomad)
         error_count = sum(1 for line in history if "Error" in line or "Failed" in line or "failed" in line)
