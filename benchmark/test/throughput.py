@@ -16,7 +16,7 @@ from drivers.nomad_driver import NomadDriver
 NUM_JOBS = 10
 JOB_DURATION = 5
 RESULTS_DIR = "/srv/nfs/cob_results"
-JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/throughput.json")
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/nomad/throughput.json")
 
 
 def run_test():
@@ -59,7 +59,7 @@ def run_test():
 
     output_data = {
         "test_name": "burst_throughput",
-        "orchestrator": "k8s",
+        "orchestrator": "nomad",
         "parameters": {
             "num_jobs": NUM_JOBS,
             "job_duration": JOB_DURATION
