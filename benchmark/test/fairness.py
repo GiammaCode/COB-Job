@@ -71,16 +71,16 @@ def run_test():
 
     results = {
         "test_name": "parallelism_fairness",
-        "orchestrator": "k8s",
+        "orchestrator": "nomad",
         "distribution": distribution,
         "stdev": stdev,
         "balanced": stdev < 1.5
     }
 
-    os.makedirs("results/k8s", exist_ok=True)
-    with open("results/k8s/fairness.json", "w") as f:
+    os.makedirs("results/nomad", exist_ok=True)
+    with open("results/nomad/fairness.json", "w") as f:
         json.dump(results, f, indent=2)
-        print(f"[RESULT] Report saved to results/k8s/fairness.json")
+        print(f"[RESULT] Report saved to results/nomad/fairness.json")
 
     driver.clean_jobs()
 
