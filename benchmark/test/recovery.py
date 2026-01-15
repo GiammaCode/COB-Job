@@ -11,11 +11,11 @@ sys.path.append(parent_dir)
 #from drivers.k8s_driver import K8sDriver
 from drivers.nomad_driver import NomadDriver
 
-JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/k8s/recovery.json")
+JSON_OUTPUT_FILE = os.path.join(parent_dir, "results/nomad/recovery.json")
 
 
 def run_test():
-    print("--- TEST: BATCH FAULT RECOVERY (K8s) ---")
+    print("--- TEST: BATCH FAULT RECOVERY ---")
     #driver = K8sDriver()
     driver = NomadDriver()
 
@@ -50,10 +50,13 @@ def run_test():
     for i in range(30):
         history = driver.get_task_history(job_id)
 
-        # Cerca "Error" (K8s) invece di "Failed" (Swarm)
-        error_count = sum(1 for line in history if "Error" in line or "Failed" in line)
-        running_count = sum(1 for line in history if "Running" in line)
-        completed_count = sum(1 for line in history if "Completed" in line)
+
+        # Cerca sia "Failed" (Swarm) che "failed" (Nomad)
+        error_count = sum(1 for line in history if "Error" in line or "Failed" in line or "failed" in line)
+        # Cerca sia "Running" che "running"
+        running_count = sum(1 for line in history if "Running" in line or "running" in line)
+        # Cerca "Completed" o "complete" (Nomad usa 'complete')
+        completed_count = sum(1 for line in history if "Completed" in line or "complete" in line)
 
         # Detection logic
         if error_count > 0 and not failure_detected:
@@ -79,7 +82,7 @@ def run_test():
     # Save Results
     output_data = {
         "test_name": "fault_recovery",
-        "orchestrator": "k8s",
+        "orchestrator": "nomad",
         "results": {
             "status": status,
             "failure_detected": failure_detected,
