@@ -7,7 +7,8 @@
 
 # COB-Job: Container Orchestrator Benchmark (Short-Lived)
 
-**COB-Job** is the second component of a Master's Thesis project designed to analyze and compare container orchestration technologies. While the first component (*COB-Service*) focused on long-running services, **COB-Job focuses on batch processing, scheduling performance, and short-lived compute tasks.**
+**COB-Job** is the second component of a Master's Thesis project designed to analyze and compare container orchestration
+technologies. It focuses on batch processing, scheduling performance, and short-lived compute tasks.
 
 The system evaluates three major orchestrators under identical workload conditions:
 - **Docker Swarm**
